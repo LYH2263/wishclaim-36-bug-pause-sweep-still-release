@@ -8,7 +8,7 @@
         <p>{{ w.note }}</p>
         <span class="tag">{{ w.status }} · {{ w.data_quality }}</span>
         <span v-if="w.remaining_seconds != null" class="tag">
-          {{ w.paused ? '已暂停 · 剩余 ' + w.remaining_seconds + 's' : '剩余 ' + w.remaining_seconds + 's' }}
+          {{ w.paused ? '已暂停 · 剩余 ' + w.remaining_seconds + 's（冻结）' : '剩余 ' + w.remaining_seconds + 's' }}
         </span>
       </article>
     </div>

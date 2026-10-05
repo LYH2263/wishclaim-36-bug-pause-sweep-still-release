@@ -4,7 +4,7 @@
     <input v-model="name" @change="load" placeholder="认领人名" />
     <article v-for="w in rows" :key="w.id" class="card">
       <h3>{{ w.title }}</h3>
-      <span class="tag">{{ w.status }} · {{ w.paused ? '已暂停 · 剩余 ' + w.remaining_seconds + 's' : '到期 ' + w.expires_at }}</span>
+      <span class="tag">{{ w.status }} · {{ w.paused ? '已暂停 · 剩余 ' + w.remaining_seconds + 's（冻结）' : '剩余 ' + w.remaining_seconds + 's' }}</span>
     </article>
   </div>
 </template>

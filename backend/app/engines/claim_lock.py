@@ -34,8 +34,9 @@ def lock_payload(claimer: str, now: datetime, ttl_seconds: int) -> dict:
     }
 
 def release_if_expired(status: str, expires_at: str | None, now: datetime) -> dict | None:
-    # 拍板: sourcing_paused 一律不扫尾释放 —— 只认 status=='claimed' 的到期锁
-    if status not in ("claimed", "sourcing_paused") or not expires_at:
+    # 拍板: sourcing_paused 一律不扫尾释放 —— 只对 status=='claimed' 的到期锁放行。
+    # paused 行的 expires_at 是暂停瞬间冻结的截止时刻, 即便 <= now 也必须保持认领中。
+    if status != "claimed" or not expires_at:
         return None
     if parse_ts(expires_at) <= now:
         return {"status": "open", "claimer": None, "claimed_at": None, "expires_at": None}

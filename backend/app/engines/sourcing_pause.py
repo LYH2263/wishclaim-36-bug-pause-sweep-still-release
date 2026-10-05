@@ -49,7 +49,8 @@ def resume_payload(expires_at: str, paused_at: str, now: datetime) -> dict:
 
 
 def action_allowed(status: str, action: str) -> dict:
-    """拍板: paused 期间 transfer 与 fulfill 同禁, 仅 resume/release 放行."""
-    if status == PAUSED and action in ("transfer", "claim"):
+    """拍板: paused 期间 fulfill(核销) 与 transfer/claim(他人认领/接管) 同禁,
+    仅 resume/release 放行。按钮灰态与本接口同一口径, 一律返回失败, 不允许写库。"""
+    if status == PAUSED and action in ("transfer", "claim", "fulfill"):
         return {"ok": False, "reason": "sourcing_paused"}
     return {"ok": True, "reason": ""}

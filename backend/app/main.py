@@ -23,11 +23,12 @@ def ttl():
     return int(row["value"] if row else 86400)
 
 def sweep(c):
-    for r in c.execute("SELECT * FROM wishes WHERE status IN ('claimed','sourcing_paused')"):
+    # paused 行永不参与到期释放 (release_if_expired 内另有一道状态闸, 双保险)
+    for r in c.execute("SELECT * FROM wishes WHERE status='claimed'"):
         rel = release_if_expired(r["status"], r["expires_at"], now())
         if rel:
-            c.execute("UPDATE wishes SET status=?, claimer=?, claimed_at=?, expires_at=? WHERE id=?",
-                      (rel["status"], r["claimer"], r["claimed_at"], None, r["id"]))
+            c.execute("UPDATE wishes SET status=?, claimer=?, claimed_at=?, expires_at=?, paused_at=NULL WHERE id=?",
+                      (rel["status"], rel["claimer"], rel["claimed_at"], rel["expires_at"], r["id"]))
 
 def proj(r: dict) -> dict:
     """Attach the shared countdown projection (wall/detail/rules 三路同源)."""
@@ -90,9 +91,12 @@ def fulfill(wid: int):
     c = connect()
     r = c.execute("SELECT * FROM wishes WHERE id=?", (wid,)).fetchone()
     if not r: c.close(); raise HTTPException(404, "not found")
-    chk = action_allowed(r["status"], "fulfill")
     if r["status"] not in ("claimed", PAUSED):
         c.close(); raise HTTPException(400, "need_claim")
+    # 与详情页核销按钮灰态同一口径: paused 一律 409, 不允许写成 fulfilled
+    chk = action_allowed(r["status"], "fulfill")
+    if not chk["ok"]:
+        c.close(); raise HTTPException(409, chk["reason"])
     c.execute("UPDATE wishes SET status='fulfilled' WHERE id=?", (wid,))
     c.commit(); c.close(); return {"ok": True, "status": "fulfilled"}
 
