@@ -26,8 +26,9 @@ def sweep(c):
     for r in c.execute("SELECT * FROM wishes WHERE status IN ('claimed','sourcing_paused')"):
         rel = release_if_expired(r["status"], r["expires_at"], now())
         if rel:
-            c.execute("UPDATE wishes SET status=?, claimer=?, claimed_at=?, expires_at=? WHERE id=?",
-                      (rel["status"], r["claimer"], r["claimed_at"], None, r["id"]))
+            # 原子落库 rel 全量字段(含 claimer=None): 不得出现 open 而 claimer 仍占原人的分裂态
+            c.execute("UPDATE wishes SET status=?, claimer=?, claimed_at=?, expires_at=?, paused_at=NULL WHERE id=?",
+                      (rel["status"], rel["claimer"], rel["claimed_at"], rel["expires_at"], r["id"]))
 
 def proj(r: dict) -> dict:
     """Attach the shared countdown projection (wall/detail/rules 三路同源)."""
@@ -91,7 +92,9 @@ def fulfill(wid: int):
     r = c.execute("SELECT * FROM wishes WHERE id=?", (wid,)).fetchone()
     if not r: c.close(); raise HTTPException(404, "not found")
     chk = action_allowed(r["status"], "fulfill")
-    if r["status"] not in ("claimed", PAUSED):
+    if not chk["ok"]:
+        c.close(); raise HTTPException(409, chk["reason"])
+    if r["status"] != "claimed":
         c.close(); raise HTTPException(400, "need_claim")
     c.execute("UPDATE wishes SET status='fulfilled' WHERE id=?", (wid,))
     c.commit(); c.close(); return {"ok": True, "status": "fulfilled"}

@@ -50,6 +50,6 @@ def resume_payload(expires_at: str, paused_at: str, now: datetime) -> dict:
 
 def action_allowed(status: str, action: str) -> dict:
     """拍板: paused 期间 transfer 与 fulfill 同禁, 仅 resume/release 放行."""
-    if status == PAUSED and action in ("transfer", "claim"):
+    if status == PAUSED and action in ("transfer", "claim", "fulfill"):
         return {"ok": False, "reason": "sourcing_paused"}
     return {"ok": True, "reason": ""}

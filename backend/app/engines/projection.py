@@ -13,8 +13,9 @@ from app.engines.sourcing_pause import PAUSED
 def remaining_seconds(status: str, expires_at: str | None, paused_at: str | None, now: datetime) -> int | None:
     if status == "claimed" and expires_at:
         return max(0, int((parse_ts(expires_at) - now).total_seconds()))
-    if status == PAUSED and expires_at:
-        return max(0, int((parse_ts(expires_at) - now).total_seconds()))
+    if status == PAUSED and expires_at and paused_at:
+        # 冻结常数: 暂停时刻存住的剩余秒, 不随 now 流逝
+        return max(0, int((parse_ts(expires_at) - parse_ts(paused_at)).total_seconds()))
     return None
 
 
